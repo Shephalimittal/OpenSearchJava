@@ -12,7 +12,10 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +31,8 @@ public class FileSpanExporter implements SpanExporter {
     private final String FIELD_SEPARATOR = "\t";
 
     private final AtomicBoolean isShutdown = new AtomicBoolean();
+
+    private static List<SpanData> finishedSpanItems = new ArrayList<>();
 
     /**
      * No-args constructor
@@ -68,12 +73,28 @@ public class FileSpanExporter implements SpanExporter {
                 .append(span.getAttributes());
             TRACING_LOGGER.info(sb.toString());
         }
+        finishedSpanItems.addAll(spans);
         return CompletableResultCode.ofSuccess();
     }
 
     @Override
     public CompletableResultCode flush() {
         return CompletableResultCode.ofSuccess();
+    }
+
+    /**
+     * Returns All the spans generated at any point of time.
+     */
+    public List<SpanData> getFinishedSpanItems() {
+        //return Collections.unmodifiableList(new ArrayList<>(finishedSpanItems));
+        return finishedSpanItems;
+    }
+
+    /**
+     * Clear the spans list.
+     */
+    public void reset() {
+        finishedSpanItems.clear();
     }
 
     @Override
