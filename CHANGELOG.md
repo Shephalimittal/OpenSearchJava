@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move span actions to Scope ([#8411](https://github.com/opensearch-project/OpenSearch/pull/8411))
 - Make Span exporter configurable ([#8620](https://github.com/opensearch-project/OpenSearch/issues/8620))
 - Add wrapper tracer implementation
+- Added Integration Tests for Distributed Tracing framework ([#8444](https://github.com/opensearch-project/OpenSearch/pull/8444))
 
 ### Deprecated
 
