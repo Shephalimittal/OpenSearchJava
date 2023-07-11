@@ -70,8 +70,8 @@ public class TelemetryTracerEnabledSanityIT extends OpenSearchIntegTestCase {
         client.prepareSearch().setQuery(queryStringQuery("fox")).get();
         client.prepareSearch().setQuery(queryStringQuery("jumps")).get();
 
-        // Sleep for about 2s to wait for traces are published
-        Thread.sleep(1000);
+        // Sleep for about 3s to wait for traces are published
+        Thread.sleep(3000);
 
         TelemetryValidators validators = new TelemetryValidators(
             Arrays.asList(
