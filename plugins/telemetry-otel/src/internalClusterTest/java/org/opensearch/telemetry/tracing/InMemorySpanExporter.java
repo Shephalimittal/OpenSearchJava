@@ -76,4 +76,8 @@ public class InMemorySpanExporter implements SpanExporter {
         );
         return span;
     }
+
+    public static InMemorySpanExporter create() {
+        return new InMemorySpanExporter();
+    }
 }

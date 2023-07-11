@@ -9,6 +9,8 @@
 package org.opensearch.telemetry.tracing;
 
 import org.opensearch.common.settings.Settings;
+import org.opensearch.common.unit.TimeValue;
+import org.opensearch.telemetry.OtelTelemetrySettings;
 import org.opensearch.telemetry.TelemetrySettings;
 import org.opensearch.test.OpenSearchIntegTestCase;
 import org.opensearch.telemetry.OTelTelemetryPlugin;
@@ -33,7 +35,7 @@ public class TelemetryTracerEnabledSanityIT extends OpenSearchIntegTestCase {
         return Settings.builder()
             .put(super.nodeSettings(nodeOrdinal))
             .put(
-                SpanExporterFactory.OTEL_TRACER_SPAN_EXPORTER_CLASS_SETTING.getKey(),
+                OtelTelemetrySettings.OTEL_TRACER_SPAN_EXPORTER_CLASS_SETTING.getKey(),
                 "org.opensearch.telemetry.tracing.InMemorySpanExporter"
             )
             .build();
@@ -69,7 +71,7 @@ public class TelemetryTracerEnabledSanityIT extends OpenSearchIntegTestCase {
         client.prepareSearch().setQuery(queryStringQuery("jumps")).get();
 
         // Sleep for about 2s to wait for traces are published
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
         TelemetryValidators validators = new TelemetryValidators(
             Arrays.asList(
@@ -81,7 +83,9 @@ public class TelemetryTracerEnabledSanityIT extends OpenSearchIntegTestCase {
             )
         );
         InMemorySpanExporter exporter = new InMemorySpanExporter();
+        System.out.println("Printing spans "+ exporter.getFinishedSpanItems());
         if (!exporter.getFinishedSpanItems().isEmpty()) {
+            System.out.println("Validating.....");
             validators.validate(exporter.getFinishedSpanItems(), 2);
         }
     }

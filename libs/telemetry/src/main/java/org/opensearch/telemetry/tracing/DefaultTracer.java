@@ -81,6 +81,7 @@ class DefaultTracer implements Tracer {
 
     @Override
     public void close() throws IOException {
+        System.out.println("Closing default tracer....");
         ((Closeable) tracingTelemetry).close();
     }
 

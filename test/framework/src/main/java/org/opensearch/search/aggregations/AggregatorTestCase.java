@@ -132,6 +132,7 @@ import org.opensearch.search.fetch.subphase.FetchSourcePhase;
 import org.opensearch.search.internal.ContextIndexSearcher;
 import org.opensearch.search.internal.SearchContext;
 import org.opensearch.search.lookup.SearchLookup;
+import org.opensearch.telemetry.tracing.NoopTracerFactory;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.test.InternalAggregationTestCase;
 import org.junit.After;
@@ -337,7 +338,7 @@ public abstract class AggregatorTestCase extends OpenSearchTestCase {
             queryCachingPolicy,
             false,
             null,
-            searchContext
+            new NoopTracerFactory()
         );
 
         when(searchContext.numberOfShards()).thenReturn(1);

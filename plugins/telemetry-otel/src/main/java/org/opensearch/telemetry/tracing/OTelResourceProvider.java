@@ -21,6 +21,7 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.opensearch.common.settings.Settings;
+import org.opensearch.telemetry.tracing.exporter.SpanExporterFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +33,10 @@ import static org.opensearch.telemetry.OtelTelemetrySettings.TRACER_EXPORTER_MAX
  * This class encapsulates all OpenTelemetry related resources
  */
 public final class OTelResourceProvider {
+
+    private static final Object mutex = new Object();
+
+    private static OpenTelemetry openTelemetry;
     private static final SpanExporterFactory spanExporterFactory = new SpanExporterFactory();
 
     private OTelResourceProvider() {}
@@ -59,17 +64,36 @@ public final class OTelResourceProvider {
      * @return Opentelemetry instance
      */
     public static OpenTelemetry get(Settings settings, SpanExporter spanExporter, ContextPropagators contextPropagators, Sampler sampler) {
-        Resource resource = Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenSearch"));
-        SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
-            .addSpanProcessor(spanProcessor(settings, spanExporter))
-            .setResource(resource)
-            .setSampler(sampler)
-            .build();
+        if (openTelemetry == null) {
+            synchronized (mutex) {
+                Resource resource = Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenSearch"));
+                SdkTracerProvider sdkTracerProvider;
+                System.out.println("Span exporter used is");
+                System.out.println(spanExporter);
+                if (sampler != null) {
+                    sdkTracerProvider = SdkTracerProvider.builder()
+                        .addSpanProcessor(spanProcessor(settings, spanExporter))
+                        .setResource(resource)
+                        .setSampler(sampler)
+                        .build();
+                } else {
+                    sdkTracerProvider = SdkTracerProvider.builder()
+                        .addSpanProcessor(spanProcessor(settings, spanExporter))
+                        .setResource(resource)
+                        .build();
+                }
 
-        return OpenTelemetrySdk.builder().setTracerProvider(sdkTracerProvider).setPropagators(contextPropagators).buildAndRegisterGlobal();
+                openTelemetry = OpenTelemetrySdk.builder()
+                    .setTracerProvider(sdkTracerProvider)
+                    .setPropagators(contextPropagators)
+                    .buildAndRegisterGlobal();
+            }
+        }
+        return openTelemetry;
     }
 
     private static BatchSpanProcessor spanProcessor(Settings settings, SpanExporter spanExporter) {
+        System.out.println("delay settings" + TRACER_EXPORTER_DELAY_SETTING.get(settings).getSeconds());
         return BatchSpanProcessor.builder(spanExporter)
             .setScheduleDelay(TRACER_EXPORTER_DELAY_SETTING.get(settings).getSeconds(), TimeUnit.SECONDS)
             .setMaxExportBatchSize(TRACER_EXPORTER_BATCH_SIZE_SETTING.get(settings))

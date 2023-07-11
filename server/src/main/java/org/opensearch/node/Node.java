@@ -729,6 +729,7 @@ public class Node implements Closeable {
             } else {
                 tracerFactory = new NoopTracerFactory();
             }
+            resourcesToClose.add(tracerFactory::close);
             final IndicesService indicesService = new IndicesService(
                 settings,
                 pluginsService,

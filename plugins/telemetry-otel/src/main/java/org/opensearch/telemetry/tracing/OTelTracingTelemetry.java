@@ -39,6 +39,7 @@ public class OTelTracingTelemetry implements TracingTelemetry {
     @Override
     public void close() {
         try {
+            System.out.println("Closing OtelTracing telemetry....");
             ((Closeable) openTelemetry).close();
         } catch (IOException e) {
             logger.warn("Error while closing Opentelemetry", e);

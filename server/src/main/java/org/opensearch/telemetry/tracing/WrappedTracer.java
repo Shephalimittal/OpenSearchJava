@@ -74,6 +74,7 @@ final class WrappedTracer implements Tracer {
 
     @Override
     public void close() throws IOException {
+        System.out.println("Closing wrapped tracer....");
         defaultTracer.close();
     }
 

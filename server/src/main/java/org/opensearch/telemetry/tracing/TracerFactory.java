@@ -52,6 +52,7 @@ public class TracerFactory implements Closeable {
     @Override
     public void close() {
         try {
+            System.out.println("Closing tracer factory....");
             tracer.close();
         } catch (IOException e) {
             logger.warn("Error closing tracer", e);
