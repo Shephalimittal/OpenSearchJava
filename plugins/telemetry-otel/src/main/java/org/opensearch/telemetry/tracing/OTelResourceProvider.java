@@ -8,6 +8,9 @@
 
 package org.opensearch.telemetry.tracing;
 
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.telemetry.tracing.exporter.OTelSpanExporterFactory;
 
@@ -35,6 +38,12 @@ import static org.opensearch.telemetry.OTelTelemetrySettings.TRACER_EXPORTER_MAX
 public final class OTelResourceProvider {
     private OTelResourceProvider() {}
 
+    static {
+        Class<FileSpanExporterProvider> fileProvider = FileSpanExporterProvider.class;
+    }
+
+    private static final Logger logger = LogManager.getLogger(OTelResourceProvider.class);
+
     /**
      * Creates OpenTelemetry instance with default configuration
      * @param settings cluster settings
@@ -58,14 +67,36 @@ public final class OTelResourceProvider {
      * @return Opentelemetry instance
      */
     public static OpenTelemetry get(Settings settings, SpanExporter spanExporter, ContextPropagators contextPropagators, Sampler sampler) {
-        Resource resource = Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenSearch"));
+        /*Resource resource = Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenSearch"));
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
             .addSpanProcessor(spanProcessor(settings, spanExporter))
             .setResource(resource)
             .setSampler(sampler)
             .build();
 
-        return OpenTelemetrySdk.builder().setTracerProvider(sdkTracerProvider).setPropagators(contextPropagators).buildAndRegisterGlobal();
+        return OpenTelemetrySdk.builder().setTracerProvider(sdkTracerProvider).setPropagators(contextPropagators).buildAndRegisterGlobal();*/
+        // Default exporter for traces and metrics is OTLP 0.17.0 onwards.
+        // If the metrics exporter property is not set to none, external dependency is required.
+        System.setProperty("otel.metrics.exporter", "none");
+
+
+        String exporter = spanExporter.toString();
+        logger.info("Exporter from settings is {}", exporter);
+        /*if (exporter == null && System.getProperty("otel.traces.exporter")==null) {
+            logger.info("i am here...");
+            System.setProperty("otel.traces.exporter", "logging");
+        } else if (exporter != null){
+            System.setProperty("otel.traces.exporter", "none");
+        }*/
+        logger.info("otel.traces.exporter is {}", System.getProperty("otel.traces.exporter"));
+        Resource resource = Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenSearch"));
+        OpenTelemetry openTelemetry = AutoConfiguredOpenTelemetrySdk.builder().addTracerProviderCustomizer(
+                (sdkTracerProviderBuilder, configProperties) -> sdkTracerProviderBuilder.addSpanProcessor(
+                    spanProcessor(settings, spanExporter)
+                ).setSampler(sampler).setResource(resource)
+            )
+            .build().getOpenTelemetrySdk();
+        return openTelemetry;
     }
 
     private static BatchSpanProcessor spanProcessor(Settings settings, SpanExporter spanExporter) {

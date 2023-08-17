@@ -87,12 +87,14 @@ import org.opensearch.search.profile.SearchProfileShardResults;
 import org.opensearch.tasks.CancellableTask;
 import org.opensearch.tasks.Task;
 import org.opensearch.core.tasks.TaskId;
+import org.opensearch.telemetry.tracing.SpanScope;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.RemoteClusterAware;
 import org.opensearch.transport.RemoteClusterService;
 import org.opensearch.transport.RemoteTransportException;
 import org.opensearch.transport.Transport;
 import org.opensearch.transport.TransportService;
+import org.opensearch.telemetry.tracing.Tracer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -157,6 +159,8 @@ public class TransportSearchAction extends HandledTransportAction<SearchRequest,
     private final CircuitBreaker circuitBreaker;
     private final SearchPipelineService searchPipelineService;
 
+    private final Tracer tracer;
+
     @Inject
     public TransportSearchAction(
         NodeClient client,
@@ -170,7 +174,7 @@ public class TransportSearchAction extends HandledTransportAction<SearchRequest,
         ActionFilters actionFilters,
         IndexNameExpressionResolver indexNameExpressionResolver,
         NamedWriteableRegistry namedWriteableRegistry,
-        SearchPipelineService searchPipelineService
+        SearchPipelineService searchPipelineService, Tracer tracer
     ) {
         super(SearchAction.NAME, transportService, actionFilters, (Writeable.Reader<SearchRequest>) SearchRequest::new);
         this.client = client;
@@ -185,6 +189,7 @@ public class TransportSearchAction extends HandledTransportAction<SearchRequest,
         this.indexNameExpressionResolver = indexNameExpressionResolver;
         this.namedWriteableRegistry = namedWriteableRegistry;
         this.searchPipelineService = searchPipelineService;
+        this.tracer = tracer;
     }
 
     private Map<String, AliasFilter> buildPerIndexAliasFilter(
@@ -278,15 +283,36 @@ public class TransportSearchAction extends HandledTransportAction<SearchRequest,
         // cancellation. There may be other top level requests like AsyncSearch which is using SearchRequest internally and has it's own
         // cancellation mechanism. For such cases, the SearchRequest when created can override the createTask and set the
         // cancelAfterTimeInterval to NO_TIMEOUT and bypass this mechanism
+        final ActionListener<SearchResponse> responseListener;
         if (task instanceof CancellableTask) {
-            listener = TimeoutTaskCancellationUtility.wrapWithCancellationListener(
+            responseListener = TimeoutTaskCancellationUtility.wrapWithCancellationListener(
                 client,
                 (CancellableTask) task,
                 clusterService.getClusterSettings(),
                 listener
             );
+        } else {
+            responseListener = listener;
         }
-        executeRequest(task, searchRequest, this::searchAsyncAction, listener);
+        SpanScope spanScope = tracer.startSpan("SearchTask_" + task.getId());
+        executeRequest(task, searchRequest, this::searchAsyncAction, getTracingWrappedListener(responseListener, spanScope));
+        //executeRequest(task, searchRequest, this::searchAsyncAction, listener);
+    }
+
+    private ActionListener<SearchResponse> getTracingWrappedListener(final ActionListener<SearchResponse> listener, SpanScope spanScope) {
+        return new ActionListener<SearchResponse>() {
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                listener.onResponse(searchResponse);
+                spanScope.close();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                listener.onFailure(e);
+                spanScope.close();
+            }
+        };
     }
 
     /**

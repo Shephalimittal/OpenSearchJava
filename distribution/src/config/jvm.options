@@ -85,3 +85,7 @@ ${error.file}
 
 # HDFS ForkJoinPool.common() support by SecurityManager
 -Djava.util.concurrent.ForkJoinPool.common.threadFactory=org.opensearch.secure_sm.SecuredForkJoinWorkerThreadFactory
+
+-Djava.security.policy=file:///Users/shephalm/IdeaProjects/OS-shephalm-0908/OpenSearchJava/plugins/telemetry-otel/src/main/plugin-metadata/plugin-security.policy
+-Dotel.traces.exporter=fileExporter
+-Dopensearch.experimental.feature.telemetry.enabled=true
