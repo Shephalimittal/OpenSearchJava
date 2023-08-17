@@ -109,6 +109,7 @@ import org.opensearch.plugins.IndexStorePlugin;
 import org.opensearch.repositories.RepositoriesService;
 import org.opensearch.script.ScriptService;
 import org.opensearch.search.internal.ReaderContext;
+import org.opensearch.telemetry.tracing.noop.NoopTracer;
 import org.opensearch.test.ClusterServiceUtils;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.test.IndexSettingsModule;
@@ -268,7 +269,7 @@ public class IndexModuleTests extends OpenSearchTestCase {
             Collections.emptyMap(),
             () -> true,
             new IndexNameExpressionResolver(new ThreadContext(Settings.EMPTY)),
-            Collections.emptyMap()
+            Collections.emptyMap(), null
         );
         module.setReaderWrapper(s -> new Wrapper());
 
@@ -294,7 +295,7 @@ public class IndexModuleTests extends OpenSearchTestCase {
             indexStoreFactories,
             () -> true,
             new IndexNameExpressionResolver(new ThreadContext(Settings.EMPTY)),
-            Collections.emptyMap()
+            Collections.emptyMap(), null
         );
 
         final IndexService indexService = newIndexService(module);
@@ -622,7 +623,7 @@ public class IndexModuleTests extends OpenSearchTestCase {
             Collections.emptyMap(),
             () -> true,
             new IndexNameExpressionResolver(new ThreadContext(Settings.EMPTY)),
-            recoveryStateFactories
+            recoveryStateFactories, null
         );
 
         final IndexService indexService = newIndexService(module);
@@ -654,7 +655,7 @@ public class IndexModuleTests extends OpenSearchTestCase {
             Collections.emptyMap(),
             () -> true,
             new IndexNameExpressionResolver(new ThreadContext(Settings.EMPTY)),
-            Collections.emptyMap()
+            Collections.emptyMap(), null
         );
     }
 
