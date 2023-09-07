@@ -46,14 +46,13 @@ public class OTelSpanExporterFactory {
      */
     public static SpanExporter create(Settings settings) {
         Class<SpanExporter> spanExporterProviderClass = OTelTelemetrySettings.OTEL_TRACER_SPAN_EXPORTER_CLASS_SETTING.get(settings);
-        SpanExporter spanExporter = instantiateSpanExporter(spanExporterProviderClass, settings);
+        SpanExporter spanExporter = instantiateSpanExporter(spanExporterProviderClass);
         logger.info("Successfully instantiated the SpanExporter class {}", spanExporterProviderClass);
         return spanExporter;
     }
 
     private static SpanExporter instantiateSpanExporter(Class<SpanExporter> spanExporterProviderClass) {
         try {
-
             // Check we ourselves are not being called by unprivileged code.
             SpecialPermission.check();
             return AccessController.doPrivileged((PrivilegedExceptionAction<SpanExporter>) () -> {
