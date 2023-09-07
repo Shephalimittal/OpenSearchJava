@@ -8,24 +8,16 @@
 
 package org.opensearch.telemetry.tracing.exporter;
 
-import org.opensearch.common.settings.Settings;
-
-import java.util.Collection;
-
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
-public class SettingsInjectableDummySpanExporter implements SpanExporter {
+import java.util.Collection;
 
-    private SettingsInjectableDummySpanExporter() {}
+public class DummySpanExporterWithGetDefault implements SpanExporter {
 
-    /**
-     * @param settings settings
-     * @return SettingsInjectableDummySpanExporter
-     */
-    public static SettingsInjectableDummySpanExporter create(Settings settings) {
-        return new SettingsInjectableDummySpanExporter();
+    public static DummySpanExporterWithGetDefault getDefault() {
+        return new DummySpanExporterWithGetDefault();
     }
 
     @Override
